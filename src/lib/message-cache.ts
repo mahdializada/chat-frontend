@@ -1,5 +1,5 @@
 import { InfiniteData, QueryClient } from '@tanstack/react-query';
-import type { Chat, Message, PaginatedMessages } from '@/types/api';
+import type { Chat, ChatSettings, Message, PaginatedMessages } from '@/types/api';
 import { queryKeys } from './query-keys';
 
 export type MessagesData = InfiniteData<PaginatedMessages, string | undefined>;
@@ -19,16 +19,16 @@ export function upsertMessageInCache(queryClient: QueryClient, message: Message)
 
       const existsById = old.pages.some((page) => page.items.some((m) => m.id === message.id));
       if (existsById) {
-        return mapMessages(old, (m) => (m.id === message.id ? { ...message } : m));
+        return mapMessages(old, (m) => (m.id === message.id ? { ...m, ...message } : m));
       }
 
       if (message.clientId) {
         const matchesOptimistic = old.pages.some((page) =>
-          page.items.some((m) => m.clientId === message.clientId && m.optimistic),
+          page.items.some((m) => m.clientId === message.clientId && (m.optimistic || m.queued)),
         );
         if (matchesOptimistic) {
           return mapMessages(old, (m) =>
-            m.clientId === message.clientId && m.optimistic ? { ...message } : m,
+            m.clientId === message.clientId && (m.optimistic || m.queued) ? { ...message } : m,
           );
         }
       }
@@ -64,6 +64,8 @@ export function markMessageDeletedInCache(
     content: null,
     attachments: [],
     reactions: [],
+    links: [],
+    mentions: [],
   }));
 }
 
@@ -128,31 +130,80 @@ function mapMessages(data: MessagesData, fn: (message: Message) => Message): Mes
   };
 }
 
+/** Drops every cached message of a chat — used by "clear chat". */
+export function clearChatMessagesInCache(queryClient: QueryClient, chatId: string): void {
+  queryClient.setQueriesData<MessagesData>({ queryKey: queryKeys.allMessages(chatId) }, (old) =>
+    old ? { ...old, pages: old.pages.map((page) => ({ ...page, items: [] })) } : old,
+  );
+}
+
 // ── chat list cache helpers ──────────────────────────────────────────────────
 
+const CHAT_LIST_KEYS = [queryKeys.chats, queryKeys.archivedChats];
+
+/**
+ * Applies an update to a chat wherever it is cached (active list or archive)
+ * and re-sorts, keeping pinned conversations on top.
+ */
 export function updateChatInList(
   queryClient: QueryClient,
   chatId: string,
   updater: (chat: Chat) => Chat,
 ): boolean {
   let found = false;
-  queryClient.setQueryData<Chat[]>(queryKeys.chats, (old) => {
-    if (!old) return old;
-    const next = old.map((chat) => {
-      if (chat.id !== chatId) return chat;
-      found = true;
-      return updater(chat);
+  for (const key of CHAT_LIST_KEYS) {
+    queryClient.setQueryData<Chat[]>(key, (old) => {
+      if (!old) return old;
+      const next = old.map((chat) => {
+        if (chat.id !== chatId) return chat;
+        found = true;
+        return updater(chat);
+      });
+      return sortChats(next);
     });
-    // Keep most-recently-active chats on top.
-    return next.sort((a, b) => {
-      const ta = a.lastMessageAt ?? a.createdAt;
-      const tb = b.lastMessageAt ?? b.createdAt;
-      return tb.localeCompare(ta);
-    });
-  });
+  }
   return found;
 }
 
+export function sortChats(chats: Chat[]): Chat[] {
+  return [...chats].sort((a, b) => {
+    if (a.settings.isPinned !== b.settings.isPinned) return a.settings.isPinned ? -1 : 1;
+    if (a.settings.isPinned && b.settings.isPinned) {
+      return (b.settings.pinnedAt ?? '').localeCompare(a.settings.pinnedAt ?? '');
+    }
+    const ta = a.lastMessageAt ?? a.createdAt;
+    const tb = b.lastMessageAt ?? b.createdAt;
+    return tb.localeCompare(ta);
+  });
+}
+
 export function zeroUnreadInList(queryClient: QueryClient, chatId: string): void {
-  updateChatInList(queryClient, chatId, (chat) => ({ ...chat, unreadCount: 0 }));
+  updateChatInList(queryClient, chatId, (chat) => ({
+    ...chat,
+    unreadCount: 0,
+    isUnread: false,
+    settings: { ...chat.settings, markedUnreadAt: null },
+  }));
+}
+
+/** Applies a per-user settings change coming from another device. */
+export function applyChatSettingsInCache(
+  queryClient: QueryClient,
+  chatId: string,
+  settings: ChatSettings,
+): void {
+  updateChatInList(queryClient, chatId, (chat) => ({
+    ...chat,
+    settings,
+    isUnread: chat.unreadCount > 0 || settings.markedUnreadAt !== null,
+  }));
+  queryClient.setQueryData<Chat>(queryKeys.chat(chatId), (old) =>
+    old
+      ? { ...old, settings, isUnread: old.unreadCount > 0 || settings.markedUnreadAt !== null }
+      : old,
+  );
+  // Archiving moves the chat between two differently-keyed lists.
+  void queryClient.invalidateQueries({ queryKey: queryKeys.chats });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.archivedChats });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.archivedSummary });
 }

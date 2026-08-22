@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { theme } from '@/lib/theme';
 import { AuthProvider } from './auth-provider';
 import { SocketProvider } from './socket-provider';
+import { ThemeSyncProvider } from './theme-sync-provider';
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -25,7 +26,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <ChakraProvider theme={theme}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <SocketProvider>{children}</SocketProvider>
+          <ThemeSyncProvider>
+            <SocketProvider>{children}</SocketProvider>
+          </ThemeSyncProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ChakraProvider>

@@ -10,17 +10,31 @@ interface UserAvatarProps {
   size?: string;
   showOnline?: boolean;
   isOnline?: boolean;
+  onClick?: () => void;
 }
 
-export function UserAvatar({ user, size = 'md', showOnline = false, isOnline = false }: UserAvatarProps) {
+export function UserAvatar({
+  user,
+  size = 'md',
+  showOnline = false,
+  isOnline = false,
+  onClick,
+}: UserAvatarProps) {
   return (
     <Avatar
       size={size}
       name={user ? fullName(user) : undefined}
       src={user?.avatar ? absoluteUrl(user.avatar) : undefined}
+      cursor={onClick ? 'pointer' : undefined}
+      onClick={onClick}
     >
       {showOnline && (
-        <AvatarBadge boxSize="1em" bg={isOnline ? 'green.400' : 'gray.400'} borderWidth="2px" />
+        <AvatarBadge
+          boxSize="1em"
+          bg={isOnline ? 'green.400' : 'gray.400'}
+          borderWidth="2px"
+          aria-label={isOnline ? 'Online' : 'Offline'}
+        />
       )}
     </Avatar>
   );

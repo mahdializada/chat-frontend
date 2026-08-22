@@ -24,6 +24,10 @@ export const theme = extendTheme({
       800: '#0e2f75',
       900: '#071a4a',
     },
+    gray: {
+      // 750 sits between Chakra's 700 and 800 — used for raised cards in dark mode.
+      750: '#252a33',
+    },
   },
   components: {
     Button: {
@@ -36,6 +40,25 @@ export const theme = extendTheme({
     global: {
       'html, body, #__next': {
         height: '100%',
+      },
+      // Visible, consistent focus ring for keyboard users everywhere.
+      '*:focus-visible': {
+        outline: '2px solid',
+        outlineColor: 'brand.400',
+        outlineOffset: '2px',
+      },
+      // Thin scrollbars so long lists do not dominate the layout.
+      '::-webkit-scrollbar': { width: '8px', height: '8px' },
+      '::-webkit-scrollbar-thumb': {
+        background: 'rgba(128,128,128,0.35)',
+        borderRadius: '8px',
+      },
+      '::-webkit-scrollbar-track': { background: 'transparent' },
+      '@media (prefers-reduced-motion: reduce)': {
+        '*': {
+          animationDuration: '0.01ms !important',
+          transitionDuration: '0.01ms !important',
+        },
       },
     },
   },

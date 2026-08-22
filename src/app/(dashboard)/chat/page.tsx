@@ -1,16 +1,17 @@
 'use client';
 
-import { Center, Icon, Text, VStack } from '@chakra-ui/react';
+import { Center } from '@chakra-ui/react';
 import { FiMessageCircle } from 'react-icons/fi';
+import { EmptyState } from '@/components/shared/empty-state';
 
 export default function ChatEmptyPage() {
   return (
     <Center h="100%" display={{ base: 'none', md: 'flex' }}>
-      <VStack spacing={3} color="gray.500">
-        <Icon as={FiMessageCircle} boxSize={12} />
-        <Text fontWeight="semibold">Select a conversation</Text>
-        <Text fontSize="sm">Choose a chat from the list or start a new one</Text>
-      </VStack>
+      <EmptyState
+        icon={FiMessageCircle}
+        title="Select a conversation"
+        description="Choose a chat from the list, or start a new one to begin messaging."
+      />
     </Center>
   );
 }

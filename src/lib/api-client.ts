@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/store/auth-store';
-import type { ApiEnvelope, ApiErrorBody, AuthResponse } from '@/types/api';
+import type { ApiEnvelope, ApiErrorBody, AuthResponse, SelfUser } from '@/types/api';
 import { API_URL } from './env';
 
 export const apiClient = axios.create({
@@ -14,7 +14,7 @@ export function getApiErrorMessage(error: unknown): string {
     const body = error.response?.data as ApiErrorBody | undefined;
     if (body?.errors?.length) return body.errors.join(', ');
     if (body?.message) return body.message;
-    if (error.code === 'ERR_NETWORK') return 'Cannot reach the server. Is the backend running?';
+    if (error.code === 'ERR_NETWORK') return 'Cannot reach the server. Check your connection.';
   }
   if (error instanceof Error) return error.message;
   return 'Something went wrong';
@@ -33,7 +33,8 @@ apiClient.interceptors.request.use((config) => {
 let refreshPromise: Promise<string | null> | null = null;
 
 /**
- * Exchanges the httpOnly refresh cookie for a fresh access token.
+ * Exchanges the httpOnly refresh cookie for a fresh access token and loads the
+ * full profile (privacy + appearance settings) in one go.
  * Used on app start and transparently whenever a request hits a 401.
  */
 export async function refreshSession(): Promise<string | null> {
@@ -41,9 +42,15 @@ export async function refreshSession(): Promise<string | null> {
     .post<ApiEnvelope<AuthResponse>>(`${API_URL}/auth/refresh`, undefined, {
       withCredentials: true,
     })
-    .then((res) => {
-      const { user, accessToken } = res.data.data;
-      useAuthStore.getState().setAuth(user, accessToken);
+    .then(async (res) => {
+      const { accessToken } = res.data.data;
+      useAuthStore.getState().setAccessToken(accessToken);
+
+      const me = await axios.get<ApiEnvelope<SelfUser>>(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        withCredentials: true,
+      });
+      useAuthStore.getState().setAuth(me.data.data, accessToken);
       return accessToken;
     })
     .catch(() => {

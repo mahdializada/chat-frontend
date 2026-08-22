@@ -10,10 +10,11 @@ import type { Chat } from '@/types/api';
 interface ChatAvatarProps {
   chat: Chat;
   size?: string;
+  onClick?: () => void;
 }
 
 /** Group avatar, or the partner's avatar with a live presence dot for direct chats. */
-export function ChatAvatar({ chat, size = 'md' }: ChatAvatarProps) {
+export function ChatAvatar({ chat, size = 'md', onClick }: ChatAvatarProps) {
   const user = useAuthStore((s) => s.user);
   const presence = useChatUiStore((s) => s.presence);
 
@@ -22,9 +23,15 @@ export function ChatAvatar({ chat, size = 'md' }: ChatAvatarProps) {
   const src = chat.type === 'GROUP' ? chat.avatar : partner?.avatar;
 
   return (
-    <Avatar size={size} name={chatDisplayName(chat, user)} src={src ? absoluteUrl(src) : undefined}>
-      {chat.type === 'DIRECT' && live && (
-        <AvatarBadge boxSize="1em" bg={live.isOnline ? 'green.400' : 'gray.400'} borderWidth="2px" />
+    <Avatar
+      size={size}
+      name={chatDisplayName(chat, user)}
+      src={src ? absoluteUrl(src) : undefined}
+      cursor={onClick ? 'pointer' : undefined}
+      onClick={onClick}
+    >
+      {chat.type === 'DIRECT' && live?.isOnline && (
+        <AvatarBadge boxSize="1em" bg="green.400" borderWidth="2px" aria-label="Online" />
       )}
     </Avatar>
   );

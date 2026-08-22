@@ -3,11 +3,16 @@
 import { useToast } from '@chakra-ui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePathname, useRouter } from 'next/navigation';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { shouldNotify, showMessageNotification } from '@/lib/notifications';
+import { flushOutbox } from '@/lib/outbox';
+import { queryKeys } from '@/lib/query-keys';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 import { registerSocketEvents } from '@/lib/socket-events';
 import { getActiveChatId } from '@/store/active-chat';
 import { useAuthStore } from '@/store/auth-store';
+import { useConnectionStore } from '@/store/connection-store';
+import type { Chat } from '@/types/api';
 
 interface SocketContextValue {
   /** True once the server confirmed authentication and room joins. */
@@ -35,10 +40,47 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const toastRef = useRef(toast);
   toastRef.current = toast;
 
+  // ── browser network status drives the offline banner and the outbox ───────
+  useEffect(() => {
+    const update = (): void => {
+      const online = navigator.onLine;
+      useConnectionStore.getState().setNetworkOnline(online);
+      if (online) void flushOutbox(queryClient);
+    };
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, [queryClient]);
+
+  const notifyIncoming = useCallback(
+    (message: Parameters<Parameters<typeof registerSocketEvents>[0]['onIncomingMessage']>[0]) => {
+      const me = useAuthStore.getState().user;
+      if (!me) return;
+      const chat = queryClient
+        .getQueryData<Chat[]>(queryKeys.chats)
+        ?.find((c) => c.id === message.chatId);
+
+      if (!shouldNotify({ chat, message, currentUserId: me.id, notificationsEnabled: me.notificationsEnabled })) {
+        return;
+      }
+      showMessageNotification({
+        chat,
+        message,
+        onClick: () => routerRef.current.push(`/chat/${message.chatId}`),
+      });
+    },
+    [queryClient],
+  );
+
   useEffect(() => {
     if (status !== 'authenticated') {
       disconnectSocket();
       setIsReady(false);
+      useConnectionStore.getState().setSocketReady(false);
       return;
     }
 
@@ -47,7 +89,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       socket,
       queryClient,
       getActiveChatId,
-      onReady: () => setIsReady(true),
+      onReady: () => {
+        setIsReady(true);
+        useConnectionStore.getState().setSocketReady(true);
+      },
       onChatDeleted: (chatId) => {
         if (pathnameRef.current?.includes(`/chat/${chatId}`)) {
           routerRef.current.push('/chat');
@@ -57,22 +102,26 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         toastRef.current({
           title: notification.title,
           description: notification.body ?? undefined,
-          status: 'info',
+          status: notification.type === 'MENTION' ? 'warning' : 'info',
           duration: 4000,
           isClosable: true,
           position: 'top-right',
         });
       },
+      onIncomingMessage: notifyIncoming,
     });
 
-    const handleDisconnect = (): void => setIsReady(false);
+    const handleDisconnect = (): void => {
+      setIsReady(false);
+      useConnectionStore.getState().setSocketReady(false);
+    };
     socket.on('disconnect', handleDisconnect);
 
     return () => {
       socket.off('disconnect', handleDisconnect);
       cleanup();
     };
-  }, [status, queryClient]);
+  }, [status, queryClient, notifyIncoming]);
 
   return <SocketContext.Provider value={{ isReady }}>{children}</SocketContext.Provider>;
 }

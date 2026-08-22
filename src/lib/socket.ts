@@ -36,12 +36,31 @@ export function disconnectSocket(): void {
   }
 }
 
+/** Promise wrapper around Socket.IO acknowledgements. */
+export function emitWithAck<T>(event: string, payload: unknown, timeoutMs = 8000): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const active = getSocket();
+    if (!active?.connected) {
+      reject(new Error('Socket is not connected'));
+      return;
+    }
+    const timer = setTimeout(() => reject(new Error(`${event} timed out`)), timeoutMs);
+    active.emit(event, payload, (response: T) => {
+      clearTimeout(timer);
+      resolve(response);
+    });
+  });
+}
+
 /** Event names — keep in sync with the backend's events.constants.ts. */
 export const WS_EVENTS = {
   READY: 'ready',
   CHAT_CREATED: 'chat:created',
   CHAT_UPDATED: 'chat:updated',
   CHAT_DELETED: 'chat:deleted',
+  CHAT_CLEARED: 'chat:cleared',
+  CHAT_SETTINGS_UPDATED: 'chat:settings:updated',
+  CHAT_DRAFT_UPDATED: 'chat:draft:updated',
   CHAT_JOIN: 'chat:join',
   CHAT_LEAVE: 'chat:leave',
   MARK_READ: 'chat:read',
@@ -49,6 +68,7 @@ export const WS_EVENTS = {
   MESSAGE_CREATED: 'message:created',
   MESSAGE_UPDATED: 'message:updated',
   MESSAGE_DELETED: 'message:deleted',
+  MESSAGE_STARRED: 'message:starred',
   MESSAGE_DELIVERED: 'message:delivered',
   MESSAGE_READ: 'message:read',
   REACTION_ADD: 'message:reaction:add',
@@ -57,5 +77,7 @@ export const WS_EVENTS = {
   TYPING_STOP: 'typing:stop',
   TYPING_UPDATE: 'typing:update',
   PRESENCE_UPDATE: 'presence:update',
+  BLOCK_UPDATED: 'user:block:updated',
   NOTIFICATION_NEW: 'notification:new',
+  SYNC: 'sync',
 } as const;
