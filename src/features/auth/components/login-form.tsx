@@ -47,7 +47,7 @@ export function LoginForm() {
             type="text"
             autoComplete="username"
             autoFocus
-            placeholder="john@example.com"
+            placeholder="mahdializada761@gmail.com"
             {...register('emailOrUsername')}
           />
           <FormErrorMessage>{errors.emailOrUsername?.message}</FormErrorMessage>

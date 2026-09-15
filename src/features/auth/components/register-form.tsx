@@ -46,7 +46,7 @@ export function RegisterForm() {
           <FormControl isInvalid={!!errors.firstName}>
             <FormLabel>First name</FormLabel>
             <Input
-              placeholder="John"
+              placeholder="Mohammad Mahdi"
               autoComplete="given-name"
               autoFocus
               {...register('firstName')}
@@ -55,20 +55,20 @@ export function RegisterForm() {
           </FormControl>
           <FormControl isInvalid={!!errors.lastName}>
             <FormLabel>Last name</FormLabel>
-            <Input placeholder="Doe" autoComplete="family-name" {...register('lastName')} />
+            <Input placeholder="Alizada" autoComplete="family-name" {...register('lastName')} />
             <FormErrorMessage>{errors.lastName?.message}</FormErrorMessage>
           </FormControl>
         </Stack>
         <FormControl isInvalid={!!errors.username}>
           <FormLabel>Username</FormLabel>
-          <Input placeholder="johndoe" autoComplete="username" {...register('username')} />
+          <Input placeholder="mahdializada" autoComplete="username" {...register('username')} />
           <FormErrorMessage>{errors.username?.message}</FormErrorMessage>
         </FormControl>
         <FormControl isInvalid={!!errors.email}>
           <FormLabel>Email</FormLabel>
           <Input
             type="email"
-            placeholder="john@example.com"
+            placeholder="mahdializada761@gmail.com"
             autoComplete="email"
             {...register('email')}
           />
