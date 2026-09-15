@@ -2,45 +2,122 @@
 
 import {
   Box,
+  Button,
+  Center,
   HStack,
+  Icon,
+  Input,
   SimpleGrid,
   Switch,
   Text,
+  Tooltip,
   useColorMode,
   useToast,
   VStack,
 } from '@chakra-ui/react';
-import { FiCheck } from 'react-icons/fi';
-import { Icon } from '@chakra-ui/react';
+import { useEffect, useMemo, useState } from 'react';
+import type { IconType } from 'react-icons';
+import { FiCheck, FiMonitor, FiMoon, FiRotateCcw, FiSun } from 'react-icons/fi';
+import { WallpaperPicker } from '@/components/shared/wallpaper-picker';
+import { ACCENT_PRESETS, DEFAULT_ACCENT } from '@/lib/accent';
 import { getApiErrorMessage } from '@/lib/api-client';
-import { requestNotificationPermission, getNotificationPermission } from '@/lib/notifications';
-import { WALLPAPERS } from '@/lib/wallpapers';
+import { generatePalette, isHexColor } from '@/lib/color';
+import { getNotificationPermission, requestNotificationPermission } from '@/lib/notifications';
 import { useAuthStore } from '@/store/auth-store';
-import type { ThemePreference } from '@/types/api';
+import type { SelfUser, ThemePreference } from '@/types/api';
 import { useUpdatePreferences } from '../hooks/use-users';
+import type { UpdatePreferencesInput } from '../services/users-service';
 
-const THEMES: { value: ThemePreference; label: string }[] = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
+const THEMES: { value: ThemePreference; label: string; icon: IconType }[] = [
+  { value: 'light', label: 'Light', icon: FiSun },
+  { value: 'dark', label: 'Dark', icon: FiMoon },
+  { value: 'system', label: 'System', icon: FiMonitor },
 ];
 
-/** Theme, chat wallpaper and notification preferences — all stored per account. */
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Box>
+      <Text fontSize="sm" fontWeight="semibold">
+        {title}
+      </Text>
+      {description && (
+        <Text fontSize="xs" color="text.muted" mt={0.5}>
+          {description}
+        </Text>
+      )}
+      <Box mt={3}>{children}</Box>
+    </Box>
+  );
+}
+
+/** Theme, accent colour, chat wallpaper and notification preferences — all stored per account. */
 export function AppearanceSettings() {
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const updatePreferences = useUpdatePreferences();
-  const { colorMode, setColorMode } = useColorMode();
+  const { setColorMode } = useColorMode();
   const toast = useToast();
+
+  const currentAccent = (user?.accentColor ?? DEFAULT_ACCENT).toLowerCase();
+  const [customAccent, setCustomAccent] = useState(currentAccent);
+  const [hexDraft, setHexDraft] = useState(currentAccent.toUpperCase());
+
+  useEffect(() => {
+    setCustomAccent(currentAccent);
+    setHexDraft(currentAccent.toUpperCase());
+  }, [currentAccent]);
+
+  // Preview with the same contrast-adjusted shade the theme will use.
+  const customPreview = useMemo(
+    () => (customAccent === DEFAULT_ACCENT ? DEFAULT_ACCENT : generatePalette(customAccent)['500']),
+    [customAccent],
+  );
 
   if (!user) return null;
 
   const onError = (error: unknown): void => {
-    toast({ title: getApiErrorMessage(error), status: 'error', duration: 4000 });
+    toast({ title: "Couldn't save your preference", description: getApiErrorMessage(error), status: 'error' });
+  };
+
+  /** Applies a preference immediately and rolls it back if the server rejects it. */
+  const save = (patch: UpdatePreferencesInput): void => {
+    const previous = useAuthStore.getState().user;
+    if (previous) setUser({ ...previous, ...patch } as SelfUser);
+    updatePreferences.mutate(patch, {
+      onError: (error) => {
+        if (previous) setUser(previous);
+        onError(error);
+      },
+    });
   };
 
   const setTheme = (theme: ThemePreference): void => {
     setColorMode(theme);
-    updatePreferences.mutate({ theme }, { onError });
+    save({ theme });
+  };
+
+  const setAccent = (hex: string | null): void => {
+    const normalized = hex?.toLowerCase() ?? null;
+    save({ accentColor: normalized === DEFAULT_ACCENT ? null : normalized });
+  };
+
+  const commitHexDraft = (): void => {
+    const value = hexDraft.trim().startsWith('#') ? hexDraft.trim() : `#${hexDraft.trim()}`;
+    if (isHexColor(value)) {
+      setCustomAccent(value.toLowerCase());
+      setHexDraft(value.toUpperCase());
+    } else {
+      setHexDraft(customAccent.toUpperCase());
+      toast({ title: 'Use a 6-digit hex colour, like #2F7CF6', status: 'warning' });
+    }
   };
 
   const enableNotifications = async (enabled: boolean): Promise<void> => {
@@ -56,24 +133,19 @@ export function AppearanceSettings() {
         return;
       }
       if (permission === 'unsupported') {
-        toast({
-          title: 'Notifications are not supported in this browser',
-          status: 'info',
-          duration: 4000,
-        });
+        toast({ title: 'Notifications are not supported in this browser', status: 'info' });
         return;
       }
     }
-    updatePreferences.mutate({ notificationsEnabled: enabled }, { onError });
+    save({ notificationsEnabled: enabled });
   };
 
+  const isPresetAccent = ACCENT_PRESETS.some((preset) => preset.value === currentAccent);
+
   return (
-    <VStack align="stretch" spacing={6}>
-      <Box>
-        <Text fontSize="sm" fontWeight="medium" mb={2}>
-          Theme
-        </Text>
-        <HStack spacing={2}>
+    <VStack align="stretch" spacing={8}>
+      <Section title="Theme" description="Light, dark, or follow your device.">
+        <SimpleGrid columns={3} spacing={2}>
           {THEMES.map((theme) => {
             const isActive = user.theme === theme.value;
             return (
@@ -81,106 +153,184 @@ export function AppearanceSettings() {
                 key={theme.value}
                 as="button"
                 type="button"
-                flex="1"
-                py={2}
-                borderRadius="md"
+                py={3}
+                borderRadius="lg"
                 borderWidth="2px"
-                borderColor={isActive ? 'brand.400' : 'transparent'}
-                bg={isActive ? 'brand.50' : 'blackAlpha.50'}
-                _dark={{
-                  bg: isActive ? 'whiteAlpha.200' : 'whiteAlpha.100',
-                }}
-                fontSize="sm"
+                borderColor={isActive ? 'brand.500' : 'border.subtle'}
+                bg={isActive ? 'bg.active' : 'transparent'}
+                _hover={{ bg: isActive ? 'bg.active' : 'bg.hover' }}
                 onClick={() => setTheme(theme.value)}
                 aria-pressed={isActive}
               >
-                {theme.label}
-              </Box>
-            );
-          })}
-        </HStack>
-      </Box>
-
-      <Box>
-        <Text fontSize="sm" fontWeight="medium" mb={2}>
-          Chat background
-        </Text>
-        <SimpleGrid columns={{ base: 3, sm: 6 }} spacing={2}>
-          {WALLPAPERS.map((wallpaper) => {
-            const isActive = (user.chatWallpaper ?? 'default') === wallpaper.id;
-            return (
-              <Box
-                key={wallpaper.id}
-                as="button"
-                type="button"
-                position="relative"
-                h="52px"
-                borderRadius="md"
-                borderWidth="2px"
-                borderColor={isActive ? 'brand.400' : 'blackAlpha.200'}
-                background={colorMode === 'dark' ? wallpaper.dark : wallpaper.light}
-                onClick={() => updatePreferences.mutate({ chatWallpaper: wallpaper.id }, { onError })}
-                aria-label={`${wallpaper.name} background`}
-                aria-pressed={isActive}
-              >
-                {isActive && (
-                  <Box
-                    position="absolute"
-                    bottom={1}
-                    right={1}
-                    bg="brand.500"
-                    color="white"
-                    borderRadius="full"
-                    p={0.5}
-                  >
-                    <Icon as={FiCheck} boxSize={2.5} aria-hidden />
-                  </Box>
-                )}
+                <VStack spacing={1}>
+                  <Icon as={theme.icon} boxSize={5} color={isActive ? 'brand.500' : 'text.muted'} aria-hidden />
+                  <Text fontSize="sm" fontWeight={isActive ? 'semibold' : 'normal'}>
+                    {theme.label}
+                  </Text>
+                </VStack>
               </Box>
             );
           })}
         </SimpleGrid>
-        <Text fontSize="xs" color="gray.500" mt={2}>
-          {WALLPAPERS.find((w) => w.id === (user.chatWallpaper ?? 'default'))?.name}
-        </Text>
-      </Box>
+      </Section>
 
-      <VStack align="stretch" spacing={3}>
-        <Text fontSize="sm" fontWeight="medium">
-          Notifications
-        </Text>
-        <HStack justify="space-between" align="center" spacing={4}>
-          <Box flex="1" minW={0}>
-            <Text fontSize="sm">Desktop notifications</Text>
-            <Text fontSize="xs" color="gray.500">
-              Show a notification for new messages when the app is in the background. Muted chats
-              stay silent.
-            </Text>
+      <Section
+        title="Accent colour"
+        description="Used for buttons, your message bubbles, links and highlights."
+      >
+        <SimpleGrid columns={{ base: 7, sm: 13 }} spacing={2} maxW="560px">
+          {ACCENT_PRESETS.map((preset) => {
+            const isActive = currentAccent === preset.value;
+            return (
+              <Tooltip key={preset.value} label={preset.name} openDelay={300}>
+                <Center
+                  as="button"
+                  type="button"
+                  boxSize="36px"
+                  borderRadius="full"
+                  bg={preset.value}
+                  color="white"
+                  boxShadow={isActive ? '0 0 0 2px var(--chakra-colors-bg-surface), 0 0 0 4px currentColor' : undefined}
+                  sx={isActive ? { color: preset.value } : undefined}
+                  transition="transform 0.1s"
+                  _hover={{ transform: 'scale(1.08)' }}
+                  aria-label={`${preset.name} accent`}
+                  aria-pressed={isActive}
+                  onClick={() => setAccent(preset.value)}
+                >
+                  {isActive && <Icon as={FiCheck} boxSize={4} color="white" aria-hidden />}
+                </Center>
+              </Tooltip>
+            );
+          })}
+        </SimpleGrid>
+
+        <HStack
+          mt={4}
+          spacing={3}
+          p={3}
+          borderWidth="1px"
+          borderRadius="lg"
+          borderColor={!isPresetAccent ? 'brand.500' : 'border.subtle'}
+          flexWrap={{ base: 'wrap', sm: 'nowrap' }}
+        >
+          <Box
+            as="label"
+            position="relative"
+            boxSize="40px"
+            flexShrink={0}
+            borderRadius="md"
+            borderWidth="1px"
+            borderColor="border.subtle"
+            bg={customAccent}
+            cursor="pointer"
+          >
+            <Input
+              type="color"
+              value={customAccent}
+              onChange={(event) => {
+                setCustomAccent(event.target.value);
+                setHexDraft(event.target.value.toUpperCase());
+              }}
+              position="absolute"
+              inset={0}
+              w="100%"
+              h="100%"
+              p={0}
+              opacity={0}
+              cursor="pointer"
+              aria-label="Choose a custom accent colour"
+            />
           </Box>
-          <Switch
-            size="sm"
-            isChecked={user.notificationsEnabled && getNotificationPermission() === 'granted'}
-            aria-label="Desktop notifications"
-            onChange={(event) => void enableNotifications(event.target.checked)}
-          />
-        </HStack>
-        <HStack justify="space-between" align="center" spacing={4}>
-          <Box flex="1" minW={0}>
-            <Text fontSize="sm">Notification sound</Text>
-            <Text fontSize="xs" color="gray.500">
-              Play a sound with new-message notifications
+          <Box flex="1" minW="120px">
+            <Text fontSize="sm" fontWeight="medium">
+              Custom colour
             </Text>
+            <Input
+              size="xs"
+              mt={1}
+              maxW="110px"
+              fontFamily="mono"
+              value={hexDraft}
+              onChange={(event) => setHexDraft(event.target.value)}
+              onBlur={commitHexDraft}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') commitHexDraft();
+              }}
+              aria-label="Accent colour hex code"
+            />
           </Box>
-          <Switch
-            size="sm"
-            isChecked={user.soundEnabled}
-            aria-label="Notification sound"
-            onChange={(event) =>
-              updatePreferences.mutate({ soundEnabled: event.target.checked }, { onError })
-            }
-          />
+          <HStack spacing={2} aria-hidden>
+            <Box bg={customPreview} color="white" fontSize="xs" fontWeight="semibold" px={3} py={1.5} borderRadius="lg">
+              Button
+            </Box>
+            <Box bg={customPreview} color="white" fontSize="xs" px={3} py={1.5} borderRadius="2xl" borderBottomRightRadius="sm">
+              Hello 👋
+            </Box>
+          </HStack>
+          <Button size="sm" onClick={() => setAccent(customAccent)} isDisabled={customAccent === currentAccent}>
+            Apply
+          </Button>
         </HStack>
-      </VStack>
+
+        {user.accentColor && (
+          <Button
+            mt={2}
+            size="xs"
+            variant="ghost"
+            colorScheme="gray"
+            leftIcon={<FiRotateCcw />}
+            onClick={() => setAccent(null)}
+          >
+            Reset to NexaChat blue
+          </Button>
+        )}
+      </Section>
+
+      <Section
+        title="Chat wallpaper"
+        description="Your default background for every chat. You can also set one per chat from its menu."
+      >
+        <WallpaperPicker
+          value={user.chatWallpaper}
+          onChange={(value) => save({ chatWallpaper: value })}
+          isSaving={updatePreferences.isPending}
+        />
+      </Section>
+
+      <Section title="Notifications">
+        <VStack align="stretch" spacing={3}>
+          <HStack justify="space-between" align="center" spacing={4}>
+            <Box flex="1" minW={0}>
+              <Text fontSize="sm">Desktop notifications</Text>
+              <Text fontSize="xs" color="text.muted">
+                Show a notification for new messages when the app is in the background. Muted chats
+                stay silent.
+              </Text>
+            </Box>
+            <Switch
+              size="sm"
+              isChecked={user.notificationsEnabled && getNotificationPermission() === 'granted'}
+              aria-label="Desktop notifications"
+              onChange={(event) => void enableNotifications(event.target.checked)}
+            />
+          </HStack>
+          <HStack justify="space-between" align="center" spacing={4}>
+            <Box flex="1" minW={0}>
+              <Text fontSize="sm">Notification sound</Text>
+              <Text fontSize="xs" color="text.muted">
+                Play a sound with new-message notifications
+              </Text>
+            </Box>
+            <Switch
+              size="sm"
+              isChecked={user.soundEnabled}
+              aria-label="Notification sound"
+              onChange={(event) => save({ soundEnabled: event.target.checked })}
+            />
+          </HStack>
+        </VStack>
+      </Section>
     </VStack>
   );
 }

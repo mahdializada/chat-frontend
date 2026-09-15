@@ -31,7 +31,10 @@ export interface UpdatePrivacyInput {
 
 export interface UpdatePreferencesInput {
   theme?: ThemePreference;
-  chatWallpaper?: string;
+  /** null restores the default accent. */
+  accentColor?: string | null;
+  /** null or empty restores the default wallpaper. */
+  chatWallpaper?: string | null;
   recentEmojis?: string[];
   recentStickers?: string[];
   notificationsEnabled?: boolean;

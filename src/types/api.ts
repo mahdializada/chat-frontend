@@ -28,6 +28,8 @@ export interface SelfUser extends User {
   aboutVisibility: PrivacyVisibility;
   readReceiptsEnabled: boolean;
   theme: ThemePreference;
+  /** #rrggbb, or null for the default NexaChat blue. */
+  accentColor: string | null;
   chatWallpaper: string | null;
   recentEmojis: string[];
   recentStickers: string[];

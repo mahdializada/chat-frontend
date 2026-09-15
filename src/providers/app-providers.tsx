@@ -2,8 +2,10 @@
 
 import { ChakraProvider } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
-import { theme } from '@/lib/theme';
+import { useEffect, useMemo, useState } from 'react';
+import { readCachedAccent, writeCachedAccent } from '@/lib/accent';
+import { createAppTheme } from '@/lib/theme';
+import { useAuthStore } from '@/store/auth-store';
 import { AuthProvider } from './auth-provider';
 import { SocketProvider } from './socket-provider';
 import { ThemeSyncProvider } from './theme-sync-provider';
@@ -21,6 +23,26 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         },
       }),
   );
+
+  // The accent colour lives on the account. Until the session loads, the last
+  // accent used in this browser paints the screen (read after mount, so the
+  // server-rendered markup and the first client render stay identical).
+  const status = useAuthStore((s) => s.status);
+  const userAccent = useAuthStore((s) => s.user?.accentColor ?? null);
+  const [cachedAccent, setCachedAccent] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCachedAccent(readCachedAccent());
+  }, []);
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    writeCachedAccent(userAccent);
+    setCachedAccent(userAccent);
+  }, [status, userAccent]);
+
+  const accent = status === 'authenticated' ? userAccent : cachedAccent;
+  const theme = useMemo(() => createAppTheme(accent), [accent]);
 
   return (
     <ChakraProvider

@@ -1,4 +1,6 @@
 import { extendTheme, ThemeConfig } from '@chakra-ui/react';
+import { DEFAULT_ACCENT } from './accent';
+import { generatePalette, isHexColor } from './color';
 
 const config: ThemeConfig = {
   initialColorMode: 'system',
@@ -8,25 +10,27 @@ const config: ThemeConfig = {
 // Inter is loaded through next/font in app/layout.tsx and exposed as --font-inter.
 const fontStack = `var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
 
-export const theme = extendTheme({
+/** The hand-tuned NexaChat blue, used whenever no custom accent is chosen. */
+const DEFAULT_BRAND = {
+  50: '#e8f2ff',
+  100: '#c5dcff',
+  200: '#9ec4ff',
+  300: '#74abff',
+  400: '#4f94ff',
+  500: '#2f7cf6',
+  600: '#2161d1',
+  700: '#1747a3',
+  800: '#0e2f75',
+  900: '#071a4a',
+};
+
+const themeOverrides = {
   config,
   fonts: {
     heading: fontStack,
     body: fontStack,
   },
   colors: {
-    brand: {
-      50: '#e8f2ff',
-      100: '#c5dcff',
-      200: '#9ec4ff',
-      300: '#74abff',
-      400: '#4f94ff',
-      500: '#2f7cf6',
-      600: '#2161d1',
-      700: '#1747a3',
-      800: '#0e2f75',
-      900: '#071a4a',
-    },
     gray: {
       // 750 sits between Chakra's 700 and 800 — used for raised cards in dark mode.
       750: '#252a33',
@@ -113,4 +117,21 @@ export const theme = extendTheme({
       },
     },
   },
-});
+};
+
+/**
+ * Builds the app theme for an accent colour. Everything that uses the `brand`
+ * scale (buttons, own bubbles, links, focus rings, badges) follows the accent.
+ */
+export function createAppTheme(accent?: string | null) {
+  const brand =
+    accent && isHexColor(accent) && accent.toLowerCase() !== DEFAULT_ACCENT
+      ? generatePalette(accent)
+      : DEFAULT_BRAND;
+  return extendTheme({
+    ...themeOverrides,
+    colors: { ...themeOverrides.colors, brand },
+  });
+}
+
+export const theme = createAppTheme(null);

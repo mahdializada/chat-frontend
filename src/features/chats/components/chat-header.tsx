@@ -24,6 +24,7 @@ import {
   FiBell,
   FiBellOff,
   FiCheckCircle,
+  FiImage,
   FiInfo,
   FiLogOut,
   FiMoreVertical,
@@ -52,6 +53,7 @@ import {
   useRemoveMember,
   useUpdateChatSettings,
 } from '../hooks/use-chats';
+import { ChatWallpaperModal } from './chat-wallpaper-modal';
 
 interface ChatHeaderProps {
   chat: Chat;
@@ -70,6 +72,7 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
   const deleteConfirm = useDisclosure();
   const leaveConfirm = useDisclosure();
   const clearConfirm = useDisclosure();
+  const wallpaperModal = useDisclosure();
 
   const deleteChat = useDeleteChat();
   const removeMember = useRemoveMember(chat.id);
@@ -191,6 +194,9 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
             <MenuItem icon={<FiStar />} onClick={onOpenStarred} fontSize="sm">
               Starred messages
             </MenuItem>
+            <MenuItem icon={<FiImage />} onClick={wallpaperModal.onOpen} fontSize="sm">
+              Wallpaper
+            </MenuItem>
             <MenuDivider />
 
             <MenuItem
@@ -260,6 +266,12 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
           </MenuList>
         </Menu>
       </HStack>
+
+      <ChatWallpaperModal
+        chat={chat}
+        isOpen={wallpaperModal.isOpen}
+        onClose={wallpaperModal.onClose}
+      />
 
       <ConfirmDialog
         isOpen={clearConfirm.isOpen}
