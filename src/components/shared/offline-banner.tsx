@@ -24,7 +24,7 @@ export function OfflineBanner() {
       spacing={2}
       px={3}
       py={1.5}
-      bg={offline ? 'orange.400' : 'blue.400'}
+      bg={offline ? 'orange.600' : 'blue.600'}
       color="white"
       fontSize="xs"
       fontWeight="medium"

@@ -2,6 +2,7 @@
 
 import {
   Box,
+  Icon,
   Button,
   FormControl,
   FormLabel,
@@ -130,7 +131,7 @@ export function NewGroupModal({ isOpen, onClose }: NewGroupModalProps) {
               )}
               <InputGroup>
                 <InputLeftElement pointerEvents="none">
-                  <FiSearch color="gray" />
+                  <Icon as={FiSearch} color="gray.400" aria-hidden />
                 </InputLeftElement>
                 <Input
                   placeholder="Search people to add…"
@@ -142,11 +143,15 @@ export function NewGroupModal({ isOpen, onClose }: NewGroupModalProps) {
                 {candidates.map((user) => (
                   <HStack
                     key={user.id}
+                    as="button"
+                    type="button"
+                    w="100%"
+                    textAlign="left"
                     p={2}
                     spacing={3}
                     borderRadius="lg"
-                    cursor="pointer"
-                    _hover={{ bg: 'whiteAlpha.200' }}
+                    _hover={{ bg: 'bg.hover' }}
+                    _focusVisible={{ bg: 'bg.hover' }}
                     onClick={() => toggleUser(user)}
                   >
                     <UserAvatar user={user} size="sm" />

@@ -5,11 +5,14 @@ const config: ThemeConfig = {
   useSystemColorMode: true,
 };
 
+// Inter is loaded through next/font in app/layout.tsx and exposed as --font-inter.
+const fontStack = `var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`;
+
 export const theme = extendTheme({
   config,
   fonts: {
-    heading: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`,
-    body: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif`,
+    heading: fontStack,
+    body: fontStack,
   },
   colors: {
     brand: {
@@ -29,17 +32,65 @@ export const theme = extendTheme({
       750: '#252a33',
     },
   },
+  /**
+   * Semantic colours: one name per role, resolved per colour mode. Components
+   * use these instead of hand-picking light/dark pairs, so the palette stays
+   * consistent and can be tuned in one place.
+   */
+  semanticTokens: {
+    colors: {
+      'bg.canvas': { default: 'gray.50', _dark: 'gray.900' },
+      'bg.surface': { default: 'white', _dark: 'gray.800' },
+      'bg.subtle': { default: 'gray.50', _dark: 'whiteAlpha.50' },
+      'bg.muted': { default: 'gray.100', _dark: 'whiteAlpha.100' },
+      'bg.hover': { default: 'gray.100', _dark: 'whiteAlpha.100' },
+      'bg.active': { default: 'brand.50', _dark: 'whiteAlpha.200' },
+      'border.subtle': { default: 'gray.200', _dark: 'whiteAlpha.200' },
+      'text.muted': { default: 'gray.500', _dark: 'gray.400' },
+      'bubble.own': { default: 'brand.500', _dark: 'brand.600' },
+      'bubble.other': { default: 'white', _dark: 'gray.700' },
+    },
+  },
+  shadows: {
+    card: '0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1)',
+    bubble: '0 1px 1px rgba(16, 24, 40, 0.06)',
+    float: '0 8px 24px rgba(16, 24, 40, 0.18)',
+  },
   components: {
     Button: {
-      defaultProps: {
-        colorScheme: 'brand',
+      baseStyle: { borderRadius: 'lg', fontWeight: 'semibold' },
+      defaultProps: { colorScheme: 'brand' },
+    },
+    Input: {
+      defaultProps: { focusBorderColor: 'brand.500' },
+      variants: { outline: { field: { borderRadius: 'lg' } } },
+    },
+    Textarea: {
+      defaultProps: { focusBorderColor: 'brand.500' },
+      variants: { outline: { borderRadius: 'lg' } },
+    },
+    Menu: {
+      baseStyle: {
+        list: { borderRadius: 'xl', boxShadow: 'float', py: 1.5, borderColor: 'border.subtle' },
+        item: { fontSize: 'sm', py: 2, px: 3 },
       },
+    },
+    Modal: {
+      baseStyle: { dialog: { borderRadius: '2xl' } },
+    },
+    Tooltip: {
+      baseStyle: { borderRadius: 'md', fontSize: 'xs', px: 2, py: 1 },
     },
   },
   styles: {
     global: {
       'html, body, #__next': {
         height: '100%',
+      },
+      body: {
+        bg: 'bg.canvas',
+        WebkitFontSmoothing: 'antialiased',
+        MozOsxFontSmoothing: 'grayscale',
       },
       // Visible, consistent focus ring for keyboard users everywhere.
       '*:focus-visible': {

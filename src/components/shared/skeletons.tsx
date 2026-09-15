@@ -62,3 +62,24 @@ export function ListRowsSkeleton({ count = 5 }: { count?: number }) {
     </VStack>
   );
 }
+
+/** Header + message bubbles + composer placeholder while a conversation loads. */
+export function ConversationSkeleton() {
+  return (
+    <VStack align="stretch" spacing={0} h="100%" aria-hidden>
+      <HStack px={4} py={3} spacing={3} borderBottomWidth="1px" borderColor="border.subtle">
+        <SkeletonCircle size="8" />
+        <Box flex="1">
+          <Skeleton height="10px" width="140px" mb={2} />
+          <Skeleton height="8px" width="80px" />
+        </Box>
+      </HStack>
+      <Box flex="1" minH={0}>
+        <MessageListSkeleton />
+      </Box>
+      <Box px={4} py={3} borderTopWidth="1px" borderColor="border.subtle">
+        <Skeleton height="40px" borderRadius="xl" />
+      </Box>
+    </VStack>
+  );
+}

@@ -1,16 +1,21 @@
 'use client';
 
-import { Flex, useColorModeValue } from '@chakra-ui/react';
+import { Flex } from '@chakra-ui/react';
 import { useParams, usePathname } from 'next/navigation';
+import { useMemo } from 'react';
 import { ChatSidebar } from '@/features/chats/components/chat-sidebar';
+import { useDocumentTitle } from '@/hooks/use-document-title';
+import { focusGlobalSearch, useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 
 export default function ChatLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ chatId?: string }>();
   const pathname = usePathname();
   const hasOpenChat = !!params?.chatId;
   const isArchivedView = pathname === '/chat/archived';
-  const borderColor = useColorModeValue('gray.200', 'whiteAlpha.200');
-  const sidebarBg = useColorModeValue('white', 'gray.800');
+
+  useDocumentTitle();
+  // Ctrl/Cmd+K works on every chat page, not only inside an open conversation.
+  useKeyboardShortcuts(useMemo(() => ({ onGlobalSearch: focusGlobalSearch }), []));
 
   return (
     <Flex h="100dvh" overflow="hidden">
@@ -21,8 +26,8 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
         w={{ base: '100%', md: '340px', lg: '380px' }}
         flexShrink={0}
         borderRightWidth={{ base: 0, md: '1px' }}
-        borderColor={borderColor}
-        bg={sidebarBg}
+        borderColor="border.subtle"
+        bg="bg.surface"
         display={{ base: hasOpenChat ? 'none' : 'flex', md: 'flex' }}
         direction="column"
         minW={0}

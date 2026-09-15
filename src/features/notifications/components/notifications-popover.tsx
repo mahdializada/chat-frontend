@@ -85,19 +85,23 @@ export function NotificationsPopover() {
             </Center>
           )}
           {notifications.data?.items.length === 0 && (
-            <Text fontSize="sm" color="gray.500" textAlign="center" py={4}>
-              Nothing here yet
+            <Text fontSize="sm" color="text.muted" textAlign="center" py={4}>
+              You&apos;re all caught up
             </Text>
           )}
           <VStack align="stretch" spacing={1}>
             {notifications.data?.items.map((notification) => (
               <Box
                 key={notification.id}
+                as="button"
+                type="button"
+                w="100%"
+                textAlign="left"
                 p={2.5}
                 borderRadius="md"
-                cursor="pointer"
-                bg={notification.isRead ? 'transparent' : 'whiteAlpha.100'}
-                _hover={{ bg: 'whiteAlpha.200' }}
+                bg={notification.isRead ? 'transparent' : 'bg.muted'}
+                _hover={{ bg: 'bg.hover' }}
+                _focusVisible={{ bg: 'bg.hover' }}
                 onClick={() => handleClick(notification)}
               >
                 <HStack justify="space-between" align="baseline">

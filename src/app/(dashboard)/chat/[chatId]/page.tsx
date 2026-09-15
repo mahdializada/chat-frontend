@@ -1,11 +1,14 @@
 'use client';
 
-import { Center, Flex, Spinner, Text, useColorMode, useDisclosure, useToast } from '@chakra-ui/react';
+import { Center, Flex, useColorMode, useDisclosure, useToast } from '@chakra-ui/react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { OfflineBanner } from '@/components/shared/offline-banner';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FiMessageCircle } from 'react-icons/fi';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { EmptyState } from '@/components/shared/empty-state';
+import { OfflineBanner } from '@/components/shared/offline-banner';
+import { ConversationSkeleton } from '@/components/shared/skeletons';
 import { ChatHeader } from '@/features/chats/components/chat-header';
 import { ChatSearchPanel } from '@/features/chats/components/chat-search-panel';
 import { GroupInfoDrawer } from '@/features/chats/components/group-info-drawer';
@@ -17,6 +20,7 @@ import { SelectionToolbar } from '@/features/messages/components/selection-toolb
 import { StarredMessagesDrawer } from '@/features/messages/components/starred-messages-drawer';
 import { TypingIndicator } from '@/features/messages/components/typing-indicator';
 import {
+  removeFailedMessage,
   useDeleteMessage,
   useDeleteMessages,
   useEditMessage,
@@ -65,6 +69,13 @@ export default function ChatPage() {
   const [forwardIds, setForwardIds] = useState<string[]>([]);
   const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  /** "Delete for everyone" waits for confirmation; it cannot be undone. */
+  const [pendingDeleteForAll, setPendingDeleteForAll] = useState<Message | null>(null);
+
+  // Unread count as it was when this chat was opened — captured during the
+  // first render with data, before the mark-as-read below zeroes it — so the
+  // list can place its "N unread messages" divider.
+  const unreadAtOpenRef = useRef<{ chatId: string; count: number } | null>(null);
 
   const info = useDisclosure();
   const search = useDisclosure();
@@ -96,6 +107,12 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatId]);
 
+  if (chat.data && unreadAtOpenRef.current?.chatId !== chatId) {
+    unreadAtOpenRef.current = { chatId, count: chat.data.unreadCount };
+  }
+  const unreadAtOpen =
+    unreadAtOpenRef.current?.chatId === chatId ? unreadAtOpenRef.current.count : 0;
+
   useMarkChatRead(chatId, (chat.data?.unreadCount ?? 0) > 0 || (chat.data?.isUnread ?? false));
 
   // Membership errors (kicked out / bad link) bounce back to the list.
@@ -125,12 +142,9 @@ export default function ChatPage() {
     [messages, chatId, router, setHighlightedMessage],
   );
 
+  // Ctrl/Cmd+K is registered once in the chat layout; only page-level keys live here.
   useKeyboardShortcuts({
     onConversationSearch: () => search.onOpen(),
-    onGlobalSearch: () => {
-      const input = document.querySelector<HTMLInputElement>('[data-sidebar-search]');
-      input?.focus();
-    },
     onEscape: () => {
       if (selectionChatId) clearSelection();
       else if (search.isOpen) search.onClose();
@@ -188,9 +202,26 @@ export default function ChatPage() {
 
   const handleDelete = useCallback(
     (message: Message, forEveryone: boolean) => {
-      deleteMessage.mutate({ messageId: message.id, forEveryone }, { onError });
+      if (forEveryone) {
+        setPendingDeleteForAll(message);
+        return;
+      }
+      deleteMessage.mutate({ messageId: message.id, forEveryone: false }, { onError });
     },
     [deleteMessage, onError],
+  );
+
+  const confirmDeleteForAll = useCallback(() => {
+    if (!pendingDeleteForAll) return;
+    deleteMessage.mutate(
+      { messageId: pendingDeleteForAll.id, forEveryone: true },
+      { onSuccess: () => setPendingDeleteForAll(null), onError },
+    );
+  }, [deleteMessage, onError, pendingDeleteForAll]);
+
+  const handleRemoveFailed = useCallback(
+    (message: Message) => removeFailedMessage(queryClient, chatId, message.id),
+    [queryClient, chatId],
   );
 
   const copySelected = useCallback(async () => {
@@ -288,19 +319,19 @@ export default function ChatPage() {
   }, [chat.data, user]);
 
   if (chat.isLoading || !user) {
-    return (
-      <Center h="100%">
-        <Spinner color="brand.500" />
-      </Center>
-    );
+    return <ConversationSkeleton />;
   }
 
   if (!chat.data) {
     return (
       <Center h="100%">
-        <Text color="gray.500" fontSize="sm">
-          Chat not found
-        </Text>
+        <EmptyState
+          icon={FiMessageCircle}
+          title="Chat not found"
+          description="It may have been deleted, or you no longer have access to it."
+          actionLabel="Back to chats"
+          onAction={() => router.replace('/chat')}
+        />
       </Center>
     );
   }
@@ -362,6 +393,9 @@ export default function ChatPage() {
         currentUserId={user.id}
         messages={messages}
         isLoading={messagesQuery.isLoading}
+        isError={messagesQuery.isError}
+        onRetryLoad={() => void messagesQuery.refetch()}
+        unreadCount={unreadAtOpen}
         hasNextPage={messagesQuery.hasNextPage ?? false}
         isFetchingNextPage={messagesQuery.isFetchingNextPage}
         fetchNextPage={() => void messagesQuery.fetchNextPage()}
@@ -380,6 +414,7 @@ export default function ChatPage() {
         onForward={handleForward}
         onSelect={handleSelect}
         onRetry={handleRetry}
+        onRemoveFailed={handleRemoveFailed}
         onJumpToMessage={jumpToMessage}
         onOpenProfile={handleOpenProfile}
       />
@@ -431,6 +466,16 @@ export default function ChatPage() {
           setForwardIds([]);
         }}
         onForwarded={clearSelection}
+      />
+
+      <ConfirmDialog
+        isOpen={!!pendingDeleteForAll}
+        onClose={() => setPendingDeleteForAll(null)}
+        onConfirm={confirmDeleteForAll}
+        isLoading={deleteMessage.isPending}
+        title="Delete for everyone?"
+        body="This message will be removed for all participants. This cannot be undone."
+        confirmLabel="Delete for everyone"
       />
 
       <ConfirmDialog

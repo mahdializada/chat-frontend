@@ -4,6 +4,7 @@ import {
   Box,
   Center,
   HStack,
+  Icon,
   Input,
   InputGroup,
   InputLeftElement,
@@ -20,7 +21,8 @@ import {
 } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FiSearch } from 'react-icons/fi';
+import { FiSearch, FiUserPlus } from 'react-icons/fi';
+import { EmptyState } from '@/components/shared/empty-state';
 import { UserAvatar } from '@/components/shared/user-avatar';
 import { getApiErrorMessage } from '@/lib/api-client';
 import { useUserSearch } from '@/features/users/hooks/use-user-search';
@@ -39,6 +41,8 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
   const router = useRouter();
   const toast = useToast();
 
+  const trimmed = term.trim();
+
   const handlePick = (userId: string): void => {
     createDirect.mutate(userId, {
       onSuccess: (chat) => {
@@ -47,7 +51,7 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
         router.push(`/chat/${chat.id}`);
       },
       onError: (error) =>
-        toast({ title: getApiErrorMessage(error), status: 'error', duration: 4000 }),
+        toast({ title: getApiErrorMessage(error), status: 'error' }),
     });
   };
 
@@ -62,15 +66,25 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
         <ModalBody pb={6}>
           <InputGroup mb={4}>
             <InputLeftElement pointerEvents="none">
-              <FiSearch color="gray" />
+              <Icon as={FiSearch} color="gray.400" aria-hidden />
             </InputLeftElement>
             <Input
               autoFocus
-              placeholder="Search people by name or username…"
+              placeholder="Search people by name or @username"
               value={term}
               onChange={(e) => setTerm(e.target.value)}
+              aria-label="Search people"
             />
           </InputGroup>
+
+          {trimmed.length < 2 && (
+            <EmptyState
+              compact
+              icon={FiUserPlus}
+              title="Find someone to chat with"
+              description="Type at least two letters of their name or username."
+            />
+          )}
 
           {search.isFetching && (
             <Center py={6}>
@@ -78,29 +92,38 @@ export function NewChatModal({ isOpen, onClose }: NewChatModalProps) {
             </Center>
           )}
 
-          {!search.isFetching && term.trim().length >= 2 && search.data?.length === 0 && (
-            <Text color="gray.500" fontSize="sm" textAlign="center" py={4}>
-              No users found
-            </Text>
+          {!search.isFetching && trimmed.length >= 2 && search.data?.length === 0 && (
+            <EmptyState
+              compact
+              icon={FiSearch}
+              title="No one found"
+              description={`Nobody matches "${trimmed}". Check the spelling or try their username.`}
+            />
           )}
 
           <VStack align="stretch" spacing={1} maxH="320px" overflowY="auto">
             {search.data?.map((user) => (
               <HStack
                 key={user.id}
+                as="button"
+                type="button"
+                w="100%"
+                textAlign="left"
                 p={2}
                 spacing={3}
                 borderRadius="lg"
-                cursor="pointer"
-                _hover={{ bg: 'whiteAlpha.200' }}
+                _hover={{ bg: 'bg.hover' }}
+                _focusVisible={{ bg: 'bg.hover' }}
+                disabled={createDirect.isPending}
+                _disabled={{ opacity: 0.6, cursor: 'wait' }}
                 onClick={() => handlePick(user.id)}
               >
                 <UserAvatar user={user} size="sm" />
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium">
+                <Box minW={0}>
+                  <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
                     {fullName(user)}
                   </Text>
-                  <Text fontSize="xs" color="gray.500">
+                  <Text fontSize="xs" color="text.muted" noOfLines={1}>
                     @{user.username}
                   </Text>
                 </Box>

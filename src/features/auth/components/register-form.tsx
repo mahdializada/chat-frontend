@@ -6,8 +6,8 @@ import {
   Button,
   FormControl,
   FormErrorMessage,
+  FormHelperText,
   FormLabel,
-  HStack,
   IconButton,
   Input,
   InputGroup,
@@ -42,10 +42,15 @@ export function RegisterForm() {
             {getApiErrorMessage(registerMutation.error)}
           </Alert>
         )}
-        <HStack align="flex-start">
+        <Stack direction={{ base: 'column', sm: 'row' }} spacing={4} align="flex-start">
           <FormControl isInvalid={!!errors.firstName}>
             <FormLabel>First name</FormLabel>
-            <Input placeholder="John" autoComplete="given-name" {...register('firstName')} />
+            <Input
+              placeholder="John"
+              autoComplete="given-name"
+              autoFocus
+              {...register('firstName')}
+            />
             <FormErrorMessage>{errors.firstName?.message}</FormErrorMessage>
           </FormControl>
           <FormControl isInvalid={!!errors.lastName}>
@@ -53,7 +58,7 @@ export function RegisterForm() {
             <Input placeholder="Doe" autoComplete="family-name" {...register('lastName')} />
             <FormErrorMessage>{errors.lastName?.message}</FormErrorMessage>
           </FormControl>
-        </HStack>
+        </Stack>
         <FormControl isInvalid={!!errors.username}>
           <FormLabel>Username</FormLabel>
           <Input placeholder="johndoe" autoComplete="username" {...register('username')} />
@@ -88,7 +93,11 @@ export function RegisterForm() {
               />
             </InputRightElement>
           </InputGroup>
-          <FormErrorMessage>{errors.password?.message}</FormErrorMessage>
+          {errors.password ? (
+            <FormErrorMessage>{errors.password.message}</FormErrorMessage>
+          ) : (
+            <FormHelperText>Use at least 8 characters.</FormHelperText>
+          )}
         </FormControl>
         <Button type="submit" isLoading={registerMutation.isPending} size="lg" mt={2}>
           Create account

@@ -46,6 +46,7 @@ export function LoginForm() {
           <Input
             type="text"
             autoComplete="username"
+            autoFocus
             placeholder="john@example.com"
             {...register('emailOrUsername')}
           />

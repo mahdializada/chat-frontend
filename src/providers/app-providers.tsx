@@ -23,7 +23,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ChakraProvider theme={theme}>
+    <ChakraProvider
+      theme={theme}
+      // Toasts sit at the top so they never cover the composer on phones.
+      toastOptions={{ defaultOptions: { position: 'top', isClosable: true, duration: 4000 } }}
+    >
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ThemeSyncProvider>

@@ -11,6 +11,11 @@ export interface ShortcutHandlers {
   onEscape?: () => void;
 }
 
+/** Focuses the sidebar's chat search (the Ctrl/Cmd+K target). */
+export function focusGlobalSearch(): void {
+  document.querySelector<HTMLInputElement>('[data-sidebar-search]')?.focus();
+}
+
 /** True when the event originated inside an editable field. */
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;

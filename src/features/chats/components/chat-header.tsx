@@ -13,7 +13,6 @@ import {
   MenuList,
   Text,
   Tooltip,
-  useColorModeValue,
   useDisclosure,
   useToast,
 } from '@chakra-ui/react';
@@ -35,6 +34,7 @@ import {
 import { TbPin, TbPinnedOff } from 'react-icons/tb';
 import { ChatAvatar } from '@/components/shared/chat-avatar';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { useModifierKeyLabel } from '@/hooks/use-media';
 import { getApiErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
 import { resolvePresence, useChatUiStore } from '@/store/chat-ui-store';
@@ -77,8 +77,7 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
   const muteChat = useMuteChat(chat.id);
   const clearChat = useClearChat(chat.id);
 
-  const borderColor = useColorModeValue('gray.200', 'whiteAlpha.200');
-  const headerBg = useColorModeValue('white', 'gray.800');
+  const modifierKey = useModifierKeyLabel();
 
   const isGroup = chat.type === 'GROUP';
   const partner = user ? directChatPartner(chat, user.id) : null;
@@ -90,13 +89,13 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
   };
 
   const subtitle = (): string => {
-    if (typingCount > 0) return 'typing…';
+    if (typingCount > 0) return 'Typing…';
     if (isGroup) {
       const online = chat.members.filter((m) => resolvePresence(m.user, presence).isOnline).length;
       return `${chat.members.length} members${online > 1 ? `, ${online} online` : ''}`;
     }
     if (chat.blockState?.blockedByMe) return 'Blocked';
-    if (live?.isOnline) return 'online';
+    if (live?.isOnline) return 'Online';
     return formatLastSeen(live?.lastSeen ?? null);
   };
 
@@ -106,8 +105,8 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
         px={{ base: 2, md: 4 }}
         py={2.5}
         borderBottomWidth="1px"
-        borderColor={borderColor}
-        bg={headerBg}
+        borderColor="border.subtle"
+        bg="bg.surface"
         spacing={3}
       >
         <IconButton
@@ -158,7 +157,7 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
                 ? 'brand.400'
                 : !isGroup && live?.isOnline
                   ? 'green.400'
-                  : 'gray.500'
+                  : 'text.muted'
             }
             fontStyle={typingCount > 0 ? 'italic' : undefined}
             noOfLines={1}
@@ -167,7 +166,7 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
           </Text>
         </Box>
 
-        <Tooltip label="Search in conversation (⌘F)">
+        <Tooltip label={`Search in conversation (${modifierKey} F)`}>
           <IconButton
             aria-label="Search in conversation"
             icon={<FiSearch />}

@@ -38,8 +38,9 @@ export function memberRoleLabel(role: string): string {
 
 // ── dates & times ───────────────────────────────────────────────────────────
 
+/** "4:44 PM" / "16:44" depending on the user's locale — no leading zero on the hour. */
 export function formatMessageTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
 export function formatChatListTime(iso: string): string {
@@ -82,7 +83,7 @@ export function formatFullDate(iso: string): string {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit',
   });
 }

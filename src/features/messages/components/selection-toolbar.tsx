@@ -1,6 +1,8 @@
 'use client';
 
-import { Button, HStack, IconButton, Text, useColorModeValue } from '@chakra-ui/react';
+import { Button, HStack, IconButton, Text } from '@chakra-ui/react';
+import { Fragment } from 'react';
+import type { IconType } from 'react-icons';
 import { FiCopy, FiCornerUpRight, FiStar, FiTrash2, FiX } from 'react-icons/fi';
 
 interface SelectionToolbarProps {
@@ -22,17 +24,21 @@ export function SelectionToolbar({
   onStar,
   onDelete,
 }: SelectionToolbarProps) {
-  const bg = useColorModeValue('brand.50', 'whiteAlpha.100');
-  const border = useColorModeValue('gray.200', 'whiteAlpha.200');
+  const actions: { label: string; icon: IconType; onClick: () => void; colorScheme?: string }[] = [
+    { label: 'Copy', icon: FiCopy, onClick: onCopy },
+    { label: 'Forward', icon: FiCornerUpRight, onClick: onForward },
+    { label: 'Star', icon: FiStar, onClick: onStar },
+    { label: 'Delete', icon: FiTrash2, onClick: onDelete, colorScheme: 'red' },
+  ];
 
   return (
     <HStack
       px={{ base: 2, md: 4 }}
       py={2.5}
-      spacing={2}
-      bg={bg}
+      spacing={{ base: 0.5, md: 2 }}
+      bg="bg.active"
       borderBottomWidth="1px"
-      borderColor={border}
+      borderColor="border.subtle"
       role="toolbar"
       aria-label="Message selection actions"
     >
@@ -43,22 +49,34 @@ export function SelectionToolbar({
         size="sm"
         onClick={onCancel}
       />
-      <Text fontSize="sm" fontWeight="semibold" flex="1">
-        {count} message{count === 1 ? '' : 's'} selected
+      <Text fontSize="sm" fontWeight="semibold" flex="1" noOfLines={1}>
+        {count} selected
       </Text>
 
-      <Button size="sm" variant="ghost" leftIcon={<FiCopy />} onClick={onCopy}>
-        Copy
-      </Button>
-      <Button size="sm" variant="ghost" leftIcon={<FiCornerUpRight />} onClick={onForward}>
-        Forward
-      </Button>
-      <Button size="sm" variant="ghost" leftIcon={<FiStar />} onClick={onStar}>
-        Star
-      </Button>
-      <Button size="sm" variant="ghost" colorScheme="red" leftIcon={<FiTrash2 />} onClick={onDelete}>
-        Delete
-      </Button>
+      {/* Icon-only on phones, labelled on wider screens. */}
+      {actions.map((action) => (
+        <Fragment key={action.label}>
+          <IconButton
+            display={{ base: 'inline-flex', md: 'none' }}
+            aria-label={action.label}
+            icon={<action.icon />}
+            size="sm"
+            variant="ghost"
+            colorScheme={action.colorScheme}
+            onClick={action.onClick}
+          />
+          <Button
+            display={{ base: 'none', md: 'inline-flex' }}
+            size="sm"
+            variant="ghost"
+            colorScheme={action.colorScheme}
+            leftIcon={<action.icon />}
+            onClick={action.onClick}
+          >
+            {action.label}
+          </Button>
+        </Fragment>
+      ))}
     </HStack>
   );
 }

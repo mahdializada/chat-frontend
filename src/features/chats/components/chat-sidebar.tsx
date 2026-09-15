@@ -11,6 +11,7 @@ import {
   InputGroup,
   InputLeftElement,
   InputRightElement,
+  Kbd,
   Menu,
   MenuButton,
   MenuDivider,
@@ -21,7 +22,6 @@ import {
   Text,
   Tooltip,
   useColorMode,
-  useColorModeValue,
   useDisclosure,
   VStack,
 } from '@chakra-ui/react';
@@ -50,6 +50,7 @@ import { StarredMessagesDrawer } from '@/features/messages/components/starred-me
 import { useMessageSearch } from '@/features/messages/hooks/use-messages';
 import { NotificationsPopover } from '@/features/notifications/components/notifications-popover';
 import { useDebouncedValue } from '@/features/users/hooks/use-user-search';
+import { useModifierKeyLabel } from '@/hooks/use-media';
 import { useAuthStore } from '@/store/auth-store';
 import {
   chatDisplayName,
@@ -86,8 +87,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
   const newGroup = useDisclosure();
   const starred = useDisclosure();
 
-  const borderColor = useColorModeValue('gray.200', 'whiteAlpha.200');
-  const hoverBg = useColorModeValue('gray.50', 'whiteAlpha.100');
+  const modifierKey = useModifierKeyLabel();
 
   const filteredChats = useMemo(() => {
     const list = chats.data ?? [];
@@ -164,7 +164,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
           </Menu>
         )}
 
-        <Text fontWeight="bold" fontSize="lg" flex="1">
+        <Text fontWeight="bold" fontSize="xl" letterSpacing="-0.02em" flex="1">
           {archived ? 'Archived' : 'Chats'}
         </Text>
 
@@ -202,8 +202,9 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
           <Input
             ref={searchInputRef}
             data-sidebar-search
-            placeholder="Search chats and messages…"
+            placeholder="Search chats and messages"
             borderRadius="lg"
+            bg="bg.subtle"
             value={term}
             onChange={(event) => setTerm(event.target.value)}
             onKeyDown={(event) => {
@@ -211,7 +212,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
             }}
             aria-label="Search chats and messages"
           />
-          {term && (
+          {term ? (
             <InputRightElement>
               <IconButton
                 aria-label="Clear search"
@@ -220,6 +221,12 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
                 variant="ghost"
                 onClick={() => setTerm('')}
               />
+            </InputRightElement>
+          ) : (
+            <InputRightElement w="auto" pr={2} display={{ base: 'none', md: 'flex' }}>
+              <Kbd fontSize="0.65rem" color="text.muted" pointerEvents="none">
+                {modifierKey} K
+              </Kbd>
             </InputRightElement>
           )}
         </InputGroup>
@@ -239,7 +246,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
           />
         )}
 
-        {!chats.isLoading && filteredChats.length === 0 && !debouncedTerm && (
+        {!chats.isLoading && !chats.isError && filteredChats.length === 0 && !debouncedTerm && (
           <EmptyState
             icon={FiMessageCircle}
             title={archived ? 'No archived chats' : 'No conversations yet'}
@@ -263,7 +270,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
             mb={1}
             borderRadius="lg"
             spacing={3}
-            _hover={{ bg: hoverBg }}
+            _hover={{ bg: 'bg.hover' }}
           >
             <Box
               boxSize="40px"
@@ -291,7 +298,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
 
         {pinned.length > 0 && (
           <>
-            <Text px={3} py={1} fontSize="0.65rem" fontWeight="bold" color="gray.500" textTransform="uppercase">
+            <Text px={3} py={1} fontSize="0.65rem" fontWeight="bold" color="text.muted" textTransform="uppercase" letterSpacing="0.05em">
               Pinned
             </Text>
             <VStack align="stretch" spacing={0.5} mb={2}>
@@ -301,6 +308,10 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
             </VStack>
             {regular.length > 0 && <Divider mb={2} />}
           </>
+        )}
+
+        {!chats.isLoading && debouncedTerm && filteredChats.length === 0 && debouncedTerm.length < 2 && (
+          <EmptyState compact icon={FiSearch} title="No chats match" description="Keep typing to search inside messages too." />
         )}
 
         <VStack align="stretch" spacing={0.5}>
@@ -313,8 +324,8 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
           <>
             <Divider my={3} />
             <HStack px={2} mb={1} justify="space-between">
-              <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                MESSAGES
+              <Text fontSize="0.65rem" fontWeight="bold" color="text.muted" textTransform="uppercase" letterSpacing="0.05em">
+                Messages
               </Text>
               {messageSearch.data && (
                 <Tag size="sm" borderRadius="full" fontSize="0.6rem">
@@ -343,7 +354,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
                   px={3}
                   py={2}
                   borderRadius="lg"
-                  _hover={{ bg: hoverBg }}
+                  _hover={{ bg: 'bg.hover' }}
                   onClick={() => handleSearchResult(result)}
                 >
                   <HStack justify="space-between" align="baseline">
@@ -379,7 +390,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
         )}
       </Box>
 
-      <Box px={2} pb={2} borderTopWidth="1px" borderColor={borderColor} pt={2}>
+      <Box px={2} pb="max(0.5rem, env(safe-area-inset-bottom))" borderTopWidth="1px" borderColor="border.subtle" pt={2}>
         <HStack
           as="button"
           type="button"
@@ -388,7 +399,7 @@ export function ChatSidebar({ archived = false }: ChatSidebarProps) {
           py={1.5}
           borderRadius="md"
           spacing={2}
-          _hover={{ bg: hoverBg }}
+          _hover={{ bg: 'bg.hover' }}
           onClick={starred.onOpen}
         >
           <Icon as={FiStar} boxSize={3.5} color="gray.500" aria-hidden />

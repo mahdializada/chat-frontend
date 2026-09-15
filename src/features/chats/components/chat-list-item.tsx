@@ -10,7 +10,6 @@ import {
   MenuItem,
   MenuList,
   Text,
-  useColorModeValue,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { useState } from 'react';
@@ -50,9 +49,6 @@ export function ChatListItem({ chat, isActive }: ChatListItemProps) {
   const updateSettings = useUpdateChatSettings(chat.id);
   const muteChat = useMuteChat(chat.id);
 
-  const activeBg = useColorModeValue('brand.50', 'whiteAlpha.100');
-  const hoverBg = useColorModeValue('gray.50', 'whiteAlpha.50');
-  const pinnedBg = useColorModeValue('blackAlpha.50', 'whiteAlpha.50');
 
   const typingList = Object.values(typingUsers ?? {});
   const draft = localDraft ?? chat.settings.draft;
@@ -81,7 +77,7 @@ export function ChatListItem({ chat, isActive }: ChatListItemProps) {
     if (draft) {
       return (
         <>
-          <Text as="span" color="red.400">
+          <Text as="span" color="green.500" fontWeight="medium">
             Draft:{' '}
           </Text>
           {draft}
@@ -108,8 +104,8 @@ export function ChatListItem({ chat, isActive }: ChatListItemProps) {
         px={3}
         py={2.5}
         borderRadius="lg"
-        bg={isActive ? activeBg : chat.settings.isPinned ? pinnedBg : 'transparent'}
-        _hover={{ bg: isActive ? activeBg : hoverBg }}
+        bg={isActive ? 'bg.active' : 'transparent'}
+        _hover={{ bg: isActive ? 'bg.active' : 'bg.hover' }}
         display="block"
         onContextMenu={(event: React.MouseEvent) => {
           event.preventDefault();
