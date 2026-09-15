@@ -27,9 +27,10 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import NextLink from 'next/link';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { FiArrowLeft, FiCamera } from 'react-icons/fi';
+import { ImageCropDialog } from '@/components/shared/image-crop-dialog';
 import { UserAvatar } from '@/components/shared/user-avatar';
 import { useChangePassword } from '@/features/auth/hooks/use-auth';
 import {
@@ -53,6 +54,8 @@ export default function ProfilePage() {
   const setUser = useAuthStore((s) => s.setUser);
   const toast = useToast();
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
+  /** Picked photo waiting to be framed in the crop dialog. */
+  const [avatarToCrop, setAvatarToCrop] = useState<File | null>(null);
   const changePassword = useChangePassword();
   const updateProfile = useUpdateProfile();
 
@@ -157,9 +160,22 @@ export default function ProfilePage() {
               hidden
               onChange={(event) => {
                 const file = event.target.files?.[0];
-                if (file) uploadAvatar.mutate(file);
                 event.target.value = '';
+                if (!file) return;
+                if (!file.type.startsWith('image/')) {
+                  toast({ title: 'Please choose an image file', status: 'warning' });
+                  return;
+                }
+                setAvatarToCrop(file);
               }}
+            />
+            <ImageCropDialog
+              file={avatarToCrop}
+              onClose={() => setAvatarToCrop(null)}
+              onCropped={async (cropped) => {
+                await uploadAvatar.mutateAsync(cropped);
+              }}
+              title="Adjust profile photo"
             />
           </Box>
           <Box>

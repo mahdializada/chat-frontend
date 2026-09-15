@@ -49,6 +49,7 @@ import {
   FiUserPlus,
 } from 'react-icons/fi';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { ImageCropDialog } from '@/components/shared/image-crop-dialog';
 import { UserAvatar } from '@/components/shared/user-avatar';
 import { SharedMediaPanel } from '@/features/media/components/shared-media-panel';
 import { useUserSearch } from '@/features/users/hooks/use-user-search';
@@ -106,6 +107,8 @@ export function GroupInfoDrawer({
   const [isAdding, setIsAdding] = useState(false);
   const [term, setTerm] = useState('');
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  /** Picked photo waiting to be framed in the crop dialog. */
+  const [avatarToCrop, setAvatarToCrop] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const search = useUserSearch(term);
 
@@ -145,13 +148,15 @@ export function GroupInfoDrawer({
     }
   };
 
+  /** Uploads the cropped photo; throws so the crop dialog stays open on failure. */
   const uploadAvatar = async (file: File): Promise<void> => {
     setUploadingAvatar(true);
     try {
       const uploaded = await uploadsService.upload(file);
-      updateChat.mutate({ avatar: uploaded.url }, { onError });
+      await updateChat.mutateAsync({ avatar: uploaded.url });
     } catch (error) {
       onError(error);
+      throw error;
     } finally {
       setUploadingAvatar(false);
     }
@@ -197,9 +202,21 @@ export function GroupInfoDrawer({
                         hidden
                         onChange={(event) => {
                           const file = event.target.files?.[0];
-                          if (file) void uploadAvatar(file);
                           event.target.value = '';
+                          if (!file) return;
+                          if (!file.type.startsWith('image/')) {
+                            onError(new Error('Please choose an image file'));
+                            return;
+                          }
+                          setAvatarToCrop(file);
                         }}
+                      />
+                      <ImageCropDialog
+                        file={avatarToCrop}
+                        onClose={() => setAvatarToCrop(null)}
+                        onCropped={uploadAvatar}
+                        title="Adjust group photo"
+                        shape="rect"
                       />
                     </>
                   )}
