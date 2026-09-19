@@ -325,6 +325,7 @@ export const MessageItem = memo(function MessageItem({
                 </Text>
                 <Text
                   fontSize="xs"
+                  dir="auto"
                   opacity={0.8}
                   noOfLines={2}
                   fontStyle={message.replyTo.deletedAt ? 'italic' : undefined}

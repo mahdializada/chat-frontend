@@ -118,7 +118,12 @@ export function ChatListItem({ chat, isActive }: ChatListItemProps) {
           <Box flex="1" minW={0}>
             <HStack justify="space-between" align="baseline" spacing={2}>
               <HStack spacing={1.5} minW={0}>
-                <Text fontWeight={chat.isUnread ? 'bold' : 'semibold'} noOfLines={1} fontSize="sm">
+                <Text
+                  fontWeight={chat.isUnread ? 'bold' : 'semibold'}
+                  noOfLines={1}
+                  fontSize="sm"
+                  dir="auto"
+                >
                   {chatDisplayName(chat, user)}
                 </Text>
                 {chat.settings.isPinned && (
@@ -146,7 +151,7 @@ export function ChatListItem({ chat, isActive }: ChatListItemProps) {
                     currentUserId={user?.id ?? ''}
                   />
                 )}
-                <Text fontSize="xs" color="gray.500" noOfLines={1}>
+                <Text fontSize="xs" color="text.muted" noOfLines={1} dir="auto">
                   {previewNode()}
                 </Text>
               </HStack>

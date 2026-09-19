@@ -599,7 +599,7 @@ export function MessageInput({
                     replyTo?.senderId === currentUserId ? 'yourself' : fullName(replyTo?.sender)
                   }`}
             </Text>
-            <Text fontSize="xs" color="text.muted" noOfLines={1}>
+            <Text fontSize="xs" color="text.muted" noOfLines={1} dir="auto">
               {(editing ?? replyTo)?.content ?? 'Attachment'}
             </Text>
           </Box>
@@ -800,6 +800,7 @@ export function MessageInput({
           bg="bg.subtle"
           fontSize="sm"
           flex="1"
+          dir="auto"
           aria-label="Message"
         />
 

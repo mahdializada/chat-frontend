@@ -134,7 +134,7 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
           aria-label={isGroup ? 'Open group info' : 'Open contact info'}
         >
           <HStack spacing={1.5}>
-            <Text fontWeight="semibold" fontSize="sm" noOfLines={1}>
+            <Text fontWeight="semibold" fontSize="sm" noOfLines={1} dir="auto">
               {chatDisplayName(chat, user)}
             </Text>
             {chat.settings.isMuted && (

@@ -49,7 +49,9 @@ export function MessageText({
   const tokens = useMemo(() => tokenize(content), [content]);
 
   return (
-    <Text fontSize="sm" whiteSpace="pre-wrap" wordBreak="break-word">
+    // dir="auto" lets each message follow its own language: Persian, Arabic
+    // and Hebrew align right, Latin text stays left.
+    <Text fontSize="sm" whiteSpace="pre-wrap" wordBreak="break-word" dir="auto">
       {tokens.map((token, index) => {
         if (token.kind === 'link') {
           return (
