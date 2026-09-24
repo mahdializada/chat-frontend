@@ -59,7 +59,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const notifyIncoming = useCallback(
     (message: Parameters<Parameters<typeof registerSocketEvents>[0]['onIncomingMessage']>[0]) => {
       const me = useAuthStore.getState().user;
-      if (!me) return;
+      if (!me || message.type === 'CALL') return;
       const chat = queryClient
         .getQueryData<Chat[]>(queryKeys.chats)
         ?.find((c) => c.id === message.chatId);

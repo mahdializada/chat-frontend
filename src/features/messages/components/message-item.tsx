@@ -37,6 +37,7 @@ import {
   FiTrash2,
 } from 'react-icons/fi';
 import { UserAvatar } from '@/components/shared/user-avatar';
+import { CallLogBubble } from '@/features/calls/components/call-log-bubble';
 import { useLongPress } from '@/hooks/use-long-press';
 import {
   formatFullDate,
@@ -174,6 +175,10 @@ export const MessageItem = memo(function MessageItem({
       ? [{ key: 'delete-all', label: 'Delete for everyone', icon: FiTrash2, group: 'danger' as const, isDestructive: true, onClick: () => onDelete(message, true) }]
       : []),
   ];
+
+  if (message.type === 'CALL') {
+    return <CallLogBubble message={message} chat={chat} currentUserId={currentUserId} />;
+  }
 
   if (message.type === 'SYSTEM') {
     return (

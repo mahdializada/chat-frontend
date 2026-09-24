@@ -47,7 +47,8 @@ export type MessageType =
   | 'AUDIO'
   | 'STICKER'
   | 'GIF'
-  | 'SYSTEM';
+  | 'SYSTEM'
+  | 'CALL';
 export type AttachmentSource = 'LOCAL' | 'REMOTE';
 export type MentionType = 'USER' | 'EVERYONE';
 export type LinkPreviewStatus = 'PENDING' | 'OK' | 'FAILED' | 'BLOCKED';
@@ -57,7 +58,8 @@ export type NotificationType =
   | 'REMOVED_FROM_GROUP'
   | 'GROUP_UPDATED'
   | 'ROLE_CHANGED'
-  | 'MENTION';
+  | 'MENTION'
+  | 'MISSED_CALL';
 
 export interface ChatMember {
   id: string;
@@ -147,12 +149,27 @@ export interface ForwardOrigin {
   sender: BasicUser | null;
 }
 
+/** Call summary embedded in CALL messages (the call log bubble). */
+export interface MessageCall {
+  id: string;
+  type: CallType;
+  status: CallStatus;
+  initiatorId: string | null;
+  startedAt: string;
+  answeredAt: string | null;
+  endedAt: string | null;
+  endReason: CallEndReason | null;
+  participants: { userId: string; status: CallParticipantStatus }[];
+}
+
 export interface Message {
   id: string;
   chatId: string;
   senderId: string | null;
   content: string | null;
   type: MessageType;
+  callId?: string | null;
+  call?: MessageCall | null;
   replyToId: string | null;
   editedAt: string | null;
   deletedAt: string | null;
@@ -282,6 +299,44 @@ export interface SyncResult {
   messages: Message[];
   removedMessageIds: string[];
   truncated: boolean;
+}
+
+// ── calls ───────────────────────────────────────────────────────────────────
+
+export type CallType = 'AUDIO' | 'VIDEO';
+export type CallStatus = 'RINGING' | 'ONGOING' | 'ENDED';
+export type CallParticipantStatus = 'RINGING' | 'JOINED' | 'DECLINED' | 'MISSED' | 'LEFT';
+export type CallEndReason = 'completed' | 'declined' | 'missed' | 'cancelled' | 'busy' | 'failed';
+
+export interface CallParticipant {
+  id: string;
+  callId: string;
+  userId: string;
+  status: CallParticipantStatus;
+  joinedAt: string | null;
+  leftAt: string | null;
+  user: BasicUser;
+}
+
+export interface Call {
+  id: string;
+  chatId: string;
+  type: CallType;
+  status: CallStatus;
+  initiatorId: string | null;
+  startedAt: string;
+  answeredAt: string | null;
+  endedAt: string | null;
+  endReason: CallEndReason | null;
+  initiator: BasicUser | null;
+  chat: { id: string; type: ChatType; name: string | null; avatar: string | null };
+  participants: CallParticipant[];
+}
+
+export interface IceServer {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
 }
 
 // ── shared media gallery ────────────────────────────────────────────────────

@@ -3,6 +3,7 @@
 import { ChakraProvider } from '@chakra-ui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
+import { CallProvider } from '@/features/calls/components/call-provider';
 import { readCachedAccent, writeCachedAccent } from '@/lib/accent';
 import { createAppTheme } from '@/lib/theme';
 import { useAuthStore } from '@/store/auth-store';
@@ -53,7 +54,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ThemeSyncProvider>
-            <SocketProvider>{children}</SocketProvider>
+            <SocketProvider>
+              <CallProvider>{children}</CallProvider>
+            </SocketProvider>
           </ThemeSyncProvider>
         </AuthProvider>
       </QueryClientProvider>

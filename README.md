@@ -24,6 +24,12 @@ Works against the separate [`chat-backend`](../chat-backend) repository (REST + 
 - Sent ✓ / delivered ✓✓ / read (coloured ✓✓) ticks driven by per-recipient receipts
 - Image, video, file and **voice message** support (MediaRecorder) with previews and an audio player
 
+**Calls**
+- Voice and video calls in direct chats, group calls with up to 8 people (WebRTC full mesh, signalled over the existing socket)
+- Incoming-call cards with accept / accept-without-video / decline, ringtone and ringback tones, desktop notification when the tab is hidden
+- In-call screen with participant tiles, mute, camera on/off (audio calls can be upgraded to video), screen sharing, timer, minimise-to-pill so you can keep chatting during a call
+- "Join call" banner for group calls already in progress, call-log bubbles (outgoing / incoming / missed with duration) and one-tap call back
+
 **Finding things**
 - Global search across chats and messages, and `Ctrl/⌘+F` search **inside** a conversation with match highlighting and next/previous navigation — all server-side
 - Clicking any result jumps to the message, loading the surrounding page if needed and highlighting it briefly
@@ -139,7 +145,13 @@ src/
 `message:reaction:add|remove`, `typing:start|stop|update`, `presence:update`,
 `chat:created|updated|deleted|cleared`, `chat:settings:updated`,
 `chat:draft:updated`, `chat:join|leave`, `chat:read`, `user:block:updated`,
-`notification:new` — payloads documented in the backend README.
+`notification:new`, `call:start|accept|decline|leave|signal|media` (ack),
+`call:updated` — payloads documented in the backend README.
+
+Calls live in `src/features/calls`: `lib/call-manager.ts` owns the
+`RTCPeerConnection`s (perfect-negotiation pattern, one connection per peer) and
+the signalling; `store/call-store.ts` holds what the UI renders; the provider
+mounts the call screen once for the whole app so calls survive navigation.
 
 ## External providers
 

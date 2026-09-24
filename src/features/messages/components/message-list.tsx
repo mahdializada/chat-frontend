@@ -67,6 +67,8 @@ function inSameRun(a: Message, b: Message): boolean {
     a.senderId === b.senderId &&
     a.type !== 'SYSTEM' &&
     b.type !== 'SYSTEM' &&
+    a.type !== 'CALL' &&
+    b.type !== 'CALL' &&
     Math.abs(new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) <= GROUP_GAP_MS
   );
 }

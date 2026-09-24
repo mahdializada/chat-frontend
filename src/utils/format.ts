@@ -1,3 +1,4 @@
+import { callPreview } from '@/features/calls/lib/call-utils';
 import type { BasicUser, Chat, Message, SelfUser } from '@/types/api';
 
 export function fullName(
@@ -152,6 +153,9 @@ export function fileTypeLabel(mimeType: string | null, fileName: string | null):
 export function messagePreview(message: Message | null, currentUserId?: string): string {
   if (!message) return 'No messages yet';
   if (message.deletedAt) return 'Message deleted';
+  if (message.type === 'CALL') {
+    return message.call ? callPreview(message.call, currentUserId) : 'Call';
+  }
   const prefix = message.type !== 'SYSTEM' && message.senderId === currentUserId ? 'You: ' : '';
   if (message.content) return `${prefix}${message.content}`;
 

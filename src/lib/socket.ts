@@ -80,4 +80,11 @@ export const WS_EVENTS = {
   BLOCK_UPDATED: 'user:block:updated',
   NOTIFICATION_NEW: 'notification:new',
   SYNC: 'sync',
+  CALL_START: 'call:start',
+  CALL_ACCEPT: 'call:accept',
+  CALL_DECLINE: 'call:decline',
+  CALL_LEAVE: 'call:leave',
+  CALL_SIGNAL: 'call:signal',
+  CALL_MEDIA: 'call:media',
+  CALL_UPDATED: 'call:updated',
 } as const;

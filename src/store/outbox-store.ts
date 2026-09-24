@@ -7,7 +7,7 @@ export interface QueuedMessage {
   clientId: string;
   chatId: string;
   content?: string;
-  type?: Exclude<MessageType, 'SYSTEM'>;
+  type?: Exclude<MessageType, 'SYSTEM' | 'CALL'>;
   replyToId?: string;
   attachments?: AttachmentInput[];
   createdAt: string;

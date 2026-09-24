@@ -60,6 +60,7 @@ export function ChatListItem({ chat, isActive }: ChatListItemProps) {
     !!chat.lastMessage &&
     chat.lastMessage.senderId === user?.id &&
     chat.lastMessage.type !== 'SYSTEM' &&
+    chat.lastMessage.type !== 'CALL' &&
     !chat.lastMessage.deletedAt &&
     typingList.length === 0 &&
     !draft;
@@ -89,6 +90,7 @@ export function ChatListItem({ chat, isActive }: ChatListItemProps) {
       chat.lastMessage &&
       !chat.lastMessage.deletedAt &&
       chat.lastMessage.type !== 'SYSTEM' &&
+      chat.lastMessage.type !== 'CALL' &&
       chat.lastMessage.sender &&
       chat.lastMessage.senderId !== user?.id
         ? `${chat.lastMessage.sender.firstName}: `

@@ -35,6 +35,7 @@ import {
 import { TbPin, TbPinnedOff } from 'react-icons/tb';
 import { ChatAvatar } from '@/components/shared/chat-avatar';
 import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { CallButtons } from '@/features/calls/components/call-buttons';
 import { useModifierKeyLabel } from '@/hooks/use-media';
 import { getApiErrorMessage } from '@/lib/api-client';
 import { useAuthStore } from '@/store/auth-store';
@@ -168,6 +169,8 @@ export function ChatHeader({ chat, onOpenInfo, onToggleSearch, onOpenStarred }: 
             {subtitle()}
           </Text>
         </Box>
+
+        <CallButtons chat={chat} />
 
         <Tooltip label={`Search in conversation (${modifierKey} F)`}>
           <IconButton

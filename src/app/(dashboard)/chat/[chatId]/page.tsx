@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { EmptyState } from '@/components/shared/empty-state';
 import { OfflineBanner } from '@/components/shared/offline-banner';
 import { ConversationSkeleton } from '@/components/shared/skeletons';
+import { ActiveCallBanner } from '@/features/calls/components/active-call-banner';
 import { ChatHeader } from '@/features/chats/components/chat-header';
 import { ChatSearchPanel } from '@/features/chats/components/chat-search-panel';
 import { GroupInfoDrawer } from '@/features/chats/components/group-info-drawer';
@@ -162,7 +163,7 @@ export default function ChatPage() {
     }) => {
       sendMessage.mutate({
         ...input,
-        type: input.type as Exclude<Message['type'], 'SYSTEM'> | undefined,
+        type: input.type as Exclude<Message['type'], 'SYSTEM' | 'CALL'> | undefined,
         clientId: crypto.randomUUID(),
       });
     },
@@ -374,6 +375,7 @@ export default function ChatPage() {
       )}
 
       <OfflineBanner />
+      <ActiveCallBanner chatId={chatId} />
 
       <ChatSearchPanel
         chatId={chatId}

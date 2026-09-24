@@ -27,7 +27,7 @@ export interface AttachmentInput {
 export interface SendMessageInput {
   chatId: string;
   content?: string;
-  type?: Exclude<MessageType, 'SYSTEM'>;
+  type?: Exclude<MessageType, 'SYSTEM' | 'CALL'>;
   replyToId?: string;
   attachments?: AttachmentInput[];
   clientId?: string;
